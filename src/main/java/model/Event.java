@@ -1,6 +1,5 @@
 package model;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,6 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+
 public class Event {
     private int id;
     private String name;
@@ -17,4 +17,5 @@ public class Event {
     private boolean isOnline;
     private double price;
     private EventType eventType;
+
 }

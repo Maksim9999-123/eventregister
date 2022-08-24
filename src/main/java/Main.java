@@ -1,6 +1,7 @@
 import manager.EventManager;
 import manager.UserManager;
 import model.Event;
+import model.EventType;
 import model.User;
 
 
@@ -11,14 +12,11 @@ public class Main {
         EventManager eventManager = new EventManager();
         UserManager userManager = new UserManager();
 
-        User user = new User();
-        userManager.addUser(user);
-        System.out.println(user);
+
         List<User> showUsers = userManager.showUsers();
         for (User users : showUsers) {
             System.out.println(users);
         }
-
 
 
         List<Event> showEvent = eventManager.showEvents();

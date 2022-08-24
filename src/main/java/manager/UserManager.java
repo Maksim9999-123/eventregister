@@ -2,6 +2,7 @@ package manager;
 
 import db.DBConnectorProvider;
 import model.Event;
+import model.EventType;
 import model.User;
 
 import java.sql.*;
@@ -43,7 +44,7 @@ public class UserManager {
                         .name(resultSet.getString(2))
                         .surname(resultSet.getString(3))
                         .email(resultSet.getString(4))
-                        .eventId((Event) resultSet.getObject(5))
+                        .eventId(resultSet.getInt(5))
                         .build();
                 result.add(user);
             }
@@ -52,5 +53,4 @@ public class UserManager {
         }
         return result;
     }
-
 }

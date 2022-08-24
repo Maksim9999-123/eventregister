@@ -2,6 +2,7 @@ package manager;
 
 import db.DBConnectorProvider;
 import model.Event;
+import model.EventType;
 
 
 import java.sql.*;
@@ -13,7 +14,7 @@ public class EventManager {
 
     public void addEvent(Event event) {
         try {
-            String query = "INSERT INTO `event` (name,place,is_online,price,event_type) " +
+            String query = "INSERT INTO event (`name`,place,is_online,price,event_type) " +
                     "VALUES(?,?,?,?,?);";
             PreparedStatement pStatement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
             pStatement.setString(1, event.getName());
@@ -21,7 +22,6 @@ public class EventManager {
             pStatement.setObject(3, event.isOnline());
             pStatement.setDouble(4, event.getPrice());
             pStatement.setString(5, event.getEventType().name());
-            System.out.println(query);
             pStatement.executeUpdate();
             ResultSet generatedKeys = pStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
@@ -46,13 +46,14 @@ public class EventManager {
                         .place(resultSet.getString(3))
                         .isOnline(resultSet.getBoolean(4))
                         .price(resultSet.getDouble(5))
+                        .eventType(EventType.valueOf(resultSet.getString(6)))
                         .build();
                 result.add(event);
             }
         } catch (SQLException throwables) {
             throwables.printStackTrace();
-        }
-        return result;
+        } return result;
+
     }
 
 }
