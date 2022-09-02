@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+
+// Not Working
 public class DBConnectorProvider {
     private static final String DB_URL = "jdbc:mysql://localhost:3306/eventregister?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
     private static final String DB_USERNAME = "root";
@@ -11,7 +13,7 @@ public class DBConnectorProvider {
 
     private static DBConnectorProvider provider = new DBConnectorProvider();
 
-    private DBConnectorProvider() {
+    public DBConnectorProvider() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {

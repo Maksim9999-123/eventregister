@@ -1,8 +1,7 @@
 package manager;
 
-import db.DBConnectorProvider;
+import db.ConnectionPool;
 import model.Event;
-import model.EventType;
 import model.User;
 
 import java.sql.*;
@@ -10,47 +9,76 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserManager {
-    private Connection connection = DBConnectorProvider.getProvider().getConnection();
+    private ConnectionPool pool = new ConnectionPool(5);
 
-    public void addUser(User user) {
+    private Connection connection = null;
+
+    private EventManager eventManager = new EventManager();
+
+    public void add(User user) {
+        String sql = "insert into user(name,surname,email,event_id) VALUES (?,?,?,?)";
         try {
-            String query = "INSERT INTO user (name,surname,email,event_id) " +
-                    "VALUES(?,?,?,?);";
-            PreparedStatement pStatement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-            pStatement.setString(1, user.getName());
-            pStatement.setString(2, user.getSurname());
-            pStatement.setString(3, user.getEmail());
-            pStatement.setObject(4, user.getEventId());
-            pStatement.executeUpdate();
-            ResultSet generatedKeys = pStatement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                int id = generatedKeys.getInt(1);
+            Connection connection = pool.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, user.getName());
+            ps.setString(2, user.getSurname());
+            ps.setString(3, user.getEmail());
+            ps.setInt(4, user.getEvent().getId());
+
+            ps.executeUpdate();
+            ResultSet resultSet = ps.getGeneratedKeys();
+            if (resultSet.next()) {
+                int id = resultSet.getInt(1);
                 user.setId(id);
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    public List<User> showUsers() {
-        String sql = "SELECT * from user";
-        List<User> result = new ArrayList<>();
+    public List<User> getAll() {
+        String sql = "select * from user";
+        List<User> users = new ArrayList<>();
         try {
+            Connection connection = pool.getConnection();
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
+
             while (resultSet.next()) {
-                User user = User.builder()
-                        .id(resultSet.getInt(1))
-                        .name(resultSet.getString(2))
-                        .surname(resultSet.getString(3))
-                        .email(resultSet.getString(4))
-                        .eventId(resultSet.getInt(5))
-                        .build();
-                result.add(user);
+                users.add(getUserFromResultSet(resultSet));
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        return result;
+        return users;
+    }
+
+    public User getById(int id) {
+        String sql = "select * from user where id = " + id;
+        try {
+            Connection connection = pool.getConnection();
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(sql);
+
+            if (resultSet.next()) {
+                return getUserFromResultSet(resultSet);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private User getUserFromResultSet(ResultSet resultSet) throws SQLException {
+        User user = new User();
+        user.setId(resultSet.getInt("id"));
+        user.setName(resultSet.getString("name"));
+        user.setSurname(resultSet.getString("surname"));
+        user.setEmail(resultSet.getString("email"));
+        int eventId = resultSet.getInt("event_id");
+        Event event = eventManager.getById(eventId);
+        user.setEvent(event);
+
+        return user;
     }
 }

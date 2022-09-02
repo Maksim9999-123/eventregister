@@ -1,59 +1,87 @@
 package manager;
 
-import db.DBConnectorProvider;
+import db.ConnectionPool;
 import model.Event;
 import model.EventType;
 
 
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 public class EventManager {
-    private Connection connection = DBConnectorProvider.getProvider().getConnection();
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private ConnectionPool pool = new ConnectionPool(5);
+    private Connection connection = null;
 
-    public void addEvent(Event event) {
+    public void add(Event event) {
+        String sql = "insert into event(name,place,is_online,event_type,price,event_date) VALUES (?,?,?,?,?,?)";
         try {
-            String query = "INSERT INTO event (`name`,place,is_online,price,event_type) " +
-                    "VALUES(?,?,?,?,?);";
-            PreparedStatement pStatement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-            pStatement.setString(1, event.getName());
-            pStatement.setString(2, event.getPlace());
-            pStatement.setObject(3, event.isOnline());
-            pStatement.setDouble(4, event.getPrice());
-            pStatement.setString(5, event.getEventType().name());
-            pStatement.executeUpdate();
-            ResultSet generatedKeys = pStatement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                int id = generatedKeys.getInt(1);
+            Connection connection = pool.getConnection();
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, event.getName());
+            ps.setString(2, event.getPlace());
+            ps.setBoolean(3, event.isOnline());
+            ps.setString(4, event.getEventType().name());
+            ps.setDouble(5, event.getPrice());
+            ps.setString(6, sdf.format(event.getEventDate()));
+            ps.executeUpdate();
+            ResultSet resultSet = ps.getGeneratedKeys();
+            if (resultSet.next()) {
+                int id = resultSet.getInt(1);
                 event.setId(id);
             }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
-    public List<Event> showEvents() {
-        String sql = "SELECT * from event";
-        List<Event> result = new ArrayList<>();
+    public List<Event> getAll() {
+        String sql = "select * from event";
+        List<Event> events = new ArrayList<>();
         try {
+            Connection connection = pool.getConnection();
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
-            while (resultSet.next()) {
-                Event event = Event.builder()
-                        .id(resultSet.getInt(1))
-                        .name(resultSet.getString(2))
-                        .place(resultSet.getString(3))
-                        .isOnline(resultSet.getBoolean(4))
-                        .price(resultSet.getDouble(5))
-                        .eventType(EventType.valueOf(resultSet.getString(6)))
-                        .build();
-                result.add(event);
-            }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        } return result;
 
+            while (resultSet.next()) {
+                events.add(getEventFromResultSet(resultSet));
+            }
+        } catch (SQLException | ParseException e) {
+            e.printStackTrace();
+        }
+        return events;
+    }
+
+    public Event getById(int id) {
+        String sql = "select * from event where id = " + id;
+        try {
+            Connection connection = pool.getConnection();
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(sql);
+
+            if (resultSet.next()) {
+                return getEventFromResultSet(resultSet);
+            }
+        } catch (SQLException | ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private Event getEventFromResultSet(ResultSet resultSet) throws SQLException, ParseException {
+
+        return Event.builder()
+                .id(resultSet.getInt("id"))
+                .name(resultSet.getString("name"))
+                .place(resultSet.getString("place"))
+                .isOnline(resultSet.getBoolean("is_online"))
+                .eventType(EventType.valueOf(resultSet.getString("event_type")))
+                .price(resultSet.getDouble("price"))
+                .eventDate(resultSet.getString("event_date") == null ? null : sdf.parse(resultSet.getString("event_date")))
+                .build();
     }
 
 }

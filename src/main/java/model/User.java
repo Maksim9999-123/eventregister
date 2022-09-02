@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,6 +15,8 @@ public class User {
     private String name;
     private String surname;
     private String email;
-    private int eventId;
+    private Event event;
+
+
 
 }
